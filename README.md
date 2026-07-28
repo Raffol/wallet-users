@@ -14,5 +14,5 @@
 - потолок баланса
 - Веб-страница
 
-Быстрый старт: "docker compose up --build -d"
-Тесты: "docker compose run --rm --entrypoint pytest app -v"
+**Быстрый старт:** "docker compose up --build -d"
+**Тесты:** "docker compose run --rm --entrypoint pytest app -v"
