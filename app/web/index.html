@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кошелёк — пульт операций</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101820;
+    --paper:#EEF1F4;
+    --slip:#FFFFFF;
+    --rule:#C4D0D9;
+    --muted:#5A6B78;
+    --credit:#0F766E;
+    --debit:#B23A2F;
+    --stamp:#23347A;
+    --display:"Anton","Haettenschweiler","Arial Narrow",sans-serif;
+    --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+    --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* masthead */
+  .masthead{
+    background:var(--ink);
+    color:var(--paper);
+    padding:18px 24px 14px;
+    display:flex;
+    align-items:baseline;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .masthead h1{
+    font-family:var(--display);
+    font-weight:400;
+    font-size:clamp(30px,6vw,46px);
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    margin:0;
+    line-height:.95;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#93A6B3;
+  }
+  .masthead a{color:#93A6B3;text-decoration:none;border-bottom:1px solid #3B4B57}
+  .masthead a:hover{color:var(--paper)}
+  .masthead nav{margin-left:auto;font-family:var(--mono);font-size:12px;display:flex;gap:16px}
+
+  /* layout */
+  .wrap{
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+    gap:24px;
+    align-items:start;
+    padding:24px;
+    max-width:1180px;
+    margin:0 auto;
+  }
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr;padding:16px}
+  }
+
+  /* panels */
+  .panel{
+    background:var(--slip);
+    border:1px solid var(--rule);
+    padding:18px 18px 20px;
+    margin-bottom:20px;
+    position:relative;
+  }
+  .panel::before{
+    content:"";
+    position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--accent,var(--ink));
+  }
+  .panel h2{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 14px;
+  }
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input,select{
+    font-family:var(--mono);
+    font-size:14px;
+    color:var(--ink);
+    background:#F7F9FA;
+    border:1px solid var(--rule);
+    padding:9px 10px;
+    width:100%;
+  }
+  input:focus-visible,select:focus-visible,button:focus-visible{
+    outline:2px solid var(--stamp);
+    outline-offset:1px;
+  }
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .row>*{flex:1 1 140px;min-width:0}
+  .row .narrow{flex:0 1 110px}
+
+  button{
+    font-family:var(--body);
+    font-size:14px;
+    font-weight:600;
+    color:var(--slip);
+    background:var(--ink);
+    border:1px solid var(--ink);
+    padding:9px 16px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  button:hover{background:#243240}
+  button.ghost{background:transparent;color:var(--ink)}
+  button.ghost:hover{background:#E6EBEF}
+  button.credit{background:var(--credit);border-color:var(--credit)}
+  button.credit:hover{filter:brightness(1.12)}
+  button.debit{background:var(--debit);border-color:var(--debit)}
+  button.debit:hover{filter:brightness(1.1)}
+  button.small{font-size:12px;padding:6px 10px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  /* balance */
+  .balance{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .figure{
+    font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
+    font-size:clamp(34px,7vw,52px);
+    font-weight:500;
+    line-height:1;
+    letter-spacing:-.02em;
+  }
+  .figure.tick{animation:tick .35s ease-out}
+  @keyframes tick{from{opacity:.25;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .hint{font-size:12px;color:var(--muted);font-family:var(--mono)}
+
+  /* cart */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+  th{
+    text-align:left;font-weight:500;font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);padding:0 6px 6px 0;
+  }
+  td{padding:3px 6px 3px 0;vertical-align:middle}
+  td:last-child,th:last-child{padding-right:0;width:34px}
+  .sum{
+    display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;
+    border-top:1px dashed var(--rule);margin-top:12px;padding-top:10px;
+  }
+
+  /* purchases */
+  .buy{border-top:1px dashed var(--rule);padding:12px 0 4px;font-family:var(--mono);font-size:12px}
+  .buy:first-of-type{border-top:0}
+  .buy code{font-size:11px;color:var(--muted);word-break:break-all}
+  .buy .row{margin-top:8px}
+
+  /* receipt tape */
+  .tape-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .tape-head h2{margin:0}
+  .tape{
+    max-height:min(72vh,760px);
+    overflow-y:auto;
+    padding-right:4px;
+  }
+  .slip{
+    background:var(--slip);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--slipcolor,var(--muted));
+    padding:10px 12px;
+    margin-bottom:10px;
+    font-family:var(--mono);
+    font-size:12px;
+    animation:print .28s ease-out;
+  }
+  @keyframes print{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  .slip-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .slip-path{color:var(--ink);word-break:break-all}
+  .slip-path b{font-weight:500}
+  .chip{
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid currentColor;padding:2px 6px;white-space:nowrap;
+  }
+  .chip.bad{transform:rotate(-1.5deg)}
+  .slip pre{
+    margin:8px 0 0;padding:8px 0 0;border-top:1px dashed var(--rule);
+    white-space:pre-wrap;word-break:break-word;color:#28313A;font-size:11.5px;
+  }
+  .slip time{color:var(--muted);font-size:10px}
+  .empty{
+    border:1px dashed var(--rule);padding:22px 14px;text-align:center;
+    color:var(--muted);font-family:var(--mono);font-size:12px;background:transparent;
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <h1>Кошелёк</h1>
+  <span class="eyebrow">wallet service · api v1</span>
+  <nav>
+    <a href="/docs">Swagger</a>
+    <a href="/redoc">ReDoc</a>
+    <a href="/health">health</a>
+  </nav>
+</header>
+
+<main class="wrap">
+  <div>
+    <section class="panel" style="--accent:var(--stamp)">
+      <h2>Кошелёк</h2>
+      <div class="row">
+        <div style="flex:1 1 320px">
+          <label for="wid">UUID кошелька</label>
+          <input id="wid" spellcheck="false" autocomplete="off">
+        </div>
+        <button class="ghost" id="newWid" style="flex:0 0 auto">Новый</button>
+      </div>
+      <div class="balance" style="margin-top:16px">
+        <div>
+          <label>Текущий баланс</label>
+          <div class="figure" id="balance" aria-live="polite">—</div>
+        </div>
+        <button class="ghost small" id="refresh">Обновить баланс</button>
+      </div>
+      <p class="hint" id="widHint">Кошелёк создаётся первым пополнением.</p>
+    </section>
+
+    <section class="panel" style="--accent:var(--credit)">
+      <h2>Пополнение и списание</h2>
+      <div class="row">
+        <div class="narrow">
+          <label for="amount">Сумма</label>
+          <input id="amount" type="number" min="0.01" step="0.01" value="1000">
+        </div>
+        <div class="btns" style="flex:1 1 auto;margin:0">
+          <button class="credit" id="deposit">Пополнить</button>
+          <button class="debit" id="withdraw">Списать</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" style="--accent:var(--debit)">
+      <h2>Покупка</h2>
+      <table>
+        <thead>
+          <tr><th>Товар</th><th style="width:96px">Цена</th><th style="width:70px">Кол-во</th><th></th></tr>
+        </thead>
+        <tbody id="cart"></tbody>
+      </table>
+      <div class="btns" style="margin-top:10px">
+        <button class="ghost small" id="addRow">+ Позиция</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div style="flex:1 1 180px">
+          <label for="promo">Промокод (необязательно)</label>
+          <input id="promo" list="codes" spellcheck="false" placeholder="SALE10" autocomplete="off">
+          <datalist id="codes">
+            <option value="SALE10">10%</option>
+            <option value="SALE25">25%</option>
+            <option value="HALF">50%</option>
+            <option value="MINUS100">−100, от 500</option>
+            <option value="CLEARANCE">−5000, итог 0</option>
+            <option value="ONCE">10%, раз на кошелёк</option>
+            <option value="FIRST3">−100, 3 раза всего</option>
+            <option value="SPRING">10%, 5 всего / 2 на кошелёк</option>
+            <option value="EXPIRED">просрочен</option>
+            <option value="FUTURE">ещё не начался</option>
+          </datalist>
+        </div>
+      </div>
+      <div class="sum">
+        <span>Сумма позиций</span><span id="cartSum">0.00</span>
+      </div>
+      <div class="btns">
+        <button class="ghost" id="check">Рассчитать</button>
+        <button class="debit" id="buy">Купить</button>
+      </div>
+    </section>
+
+    <section class="panel" style="--accent:var(--credit)">
+      <h2>Возвраты</h2>
+      <div id="purchases"><p class="hint" style="margin:0">Покупок пока нет — они появятся здесь после оплаты.</p></div>
+    </section>
+  </div>
+
+  <div>
+    <div class="tape-head">
+      <h2 style="font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)">Чековая лента</h2>
+      <button class="ghost small" id="clear">Очистить</button>
+    </div>
+    <div class="tape" id="tape" aria-live="polite">
+      <div class="empty">Лента пуста. Выполните операцию — здесь появится чек с ответом сервера.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const money = (v) => Number(v).toFixed(2);
+
+/* ---------- wallet ---------- */
+function newWid(){
+  const id = crypto.randomUUID ? crypto.randomUUID()
+    : '00000000-0000-4000-8000-' + Date.now().toString(16).padStart(12,'0');
+  $('wid').value = id;
+  $('balance').textContent = '—';
+  $('purchases').innerHTML = '<p class="hint" style="margin:0">Покупок пока нет — они появятся здесь после оплаты.</p>';
+}
+newWid();
+$('newWid').onclick = newWid;
+
+/* ---------- receipt tape ---------- */
+function slip(method, path, status, data){
+  const tape = $('tape');
+  const empty = tape.querySelector('.empty');
+  if (empty) empty.remove();
+
+  const ok = status >= 200 && status < 300;
+  const el = document.createElement('article');
+  el.className = 'slip';
+  el.style.setProperty('--slipcolor', ok ? 'var(--credit)' : 'var(--debit)');
+
+  const top = document.createElement('div');
+  top.className = 'slip-top';
+  const left = document.createElement('span');
+  left.className = 'slip-path';
+  left.innerHTML = '<b>' + method + '</b> ' + path.replace(/^\/api\/v1/, '');
+  const chip = document.createElement('span');
+  chip.className = 'chip' + (ok ? '' : ' bad');
+  chip.style.color = ok ? 'var(--credit)' : 'var(--debit)';
+  chip.textContent = ok ? status + ' ok' : status + ' отказ';
+  top.append(left, chip);
+
+  const stamp = document.createElement('time');
+  stamp.textContent = new Date().toLocaleTimeString('ru-RU');
+
+  const pre = document.createElement('pre');
+  pre.textContent = data === null ? '(пустой ответ)' : JSON.stringify(data, null, 2);
+
+  el.append(top, stamp, pre);
+  tape.prepend(el);
+  while (tape.children.length > 40) tape.lastElementChild.remove();
+}
+
+$('clear').onclick = () => {
+  $('tape').innerHTML = '<div class="empty">Лента пуста. Выполните операцию — здесь появится чек с ответом сервера.</div>';
+};
+
+/* ---------- api ---------- */
+async function api(method, path, body){
+  const opts = { method, headers: {} };
+  if (body !== undefined){
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  let res, data = null;
+  try {
+    res = await fetch(path, opts);
+    try { data = await res.json(); } catch (e) { data = null; }
+  } catch (e) {
+    slip(method, path, 0, { detail: 'Сервер недоступен: ' + e.message });
+    return { status: 0, data: null };
+  }
+  slip(method, path, res.status, data);
+  if (data && data.balance !== undefined) setBalance(data.balance);
+  return { status: res.status, data };
+}
+
+function setBalance(v){
+  const el = $('balance');
+  el.textContent = money(v);
+  el.classList.remove('tick');
+  void el.offsetWidth;
+  el.classList.add('tick');
+}
+
+const wid = () => $('wid').value.trim();
+const base = () => '/api/v1/wallets/' + encodeURIComponent(wid());
+
+function requireWid(){
+  if (wid()) return true;
+  slip('—', '(без UUID)', 0,
+       { detail: 'Укажите UUID кошелька или нажмите «Новый».' });
+  return false;
+}
+
+/* ---------- balance / operations ---------- */
+$('refresh').onclick = () => { if (requireWid()) api('GET', base()); };
+
+async function operate(type){
+  if (!requireWid()) return;
+  const amount = Number($('amount').value);
+  await api('POST', base() + '/operation', { operation_type: type, amount });
+}
+$('deposit').onclick = () => operate('DEPOSIT');
+$('withdraw').onclick = () => operate('WITHDRAW');
+
+/* ---------- cart ---------- */
+const startCart = [
+  { name: 'Notebook', price: 200, quantity: 2 },
+  { name: 'Backpack', price: 300, quantity: 1 },
+  { name: 'Pen set',  price: 125, quantity: 2 },
+];
+
+function addRow(item = { name: '', price: 100, quantity: 1 }){
+  const tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td><input class="c-name" spellcheck="false"></td>' +
+    '<td><input class="c-price" type="number" min="0.01" step="0.01"></td>' +
+    '<td><input class="c-qty" type="number" min="1" step="1"></td>' +
+    '<td><button class="ghost small" aria-label="Удалить позицию">×</button></td>';
+  // Values are assigned, not interpolated: a quote in a product name
+  // would otherwise break the markup.
+  tr.querySelector('.c-name').value = item.name;
+  tr.querySelector('.c-price').value = item.price;
+  tr.querySelector('.c-qty').value = item.quantity;
+  tr.querySelector('button').onclick = () => { tr.remove(); sumCart(); };
+  tr.querySelectorAll('input').forEach(i => i.addEventListener('input', sumCart));
+  $('cart').append(tr);
+}
+
+function readCart(){
+  return [...$('cart').children].map(tr => ({
+    name: tr.querySelector('.c-name').value || 'Товар',
+    price: Number(tr.querySelector('.c-price').value),
+    quantity: parseInt(tr.querySelector('.c-qty').value, 10),
+  }));
+}
+
+function sumCart(){
+  const total = readCart().reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
+  $('cartSum').textContent = money(total);
+}
+
+startCart.forEach(addRow);
+sumCart();
+$('addRow').onclick = () => { addRow(); sumCart(); };
+
+function cartBody(){
+  const body = { items: readCart() };
+  const code = $('promo').value.trim();
+  if (code) body.promo_code = code;
+  return body;
+}
+
+$('check').onclick = () => {
+  if (requireWid()) api('POST', base() + '/purchase/check', cartBody());
+};
+
+$('buy').onclick = async () => {
+  if (!requireWid()) return;
+  const walletId = wid();
+  const { status, data } = await api('POST', base() + '/purchase', cartBody());
+  if (status === 200) addPurchase(walletId, data);
+};
+
+/* ---------- purchases & refunds ---------- */
+function addPurchase(walletId, p){
+  const box = $('purchases');
+  const hint = box.querySelector('.hint');
+  if (hint) hint.remove();
+
+  const el = document.createElement('div');
+  el.className = 'buy';
+  el.innerHTML =
+    '<div>Списано <b>' + money(p.total) + '</b>' +
+    (p.discount > 0 ? ' · скидка ' + money(p.discount) + (p.promo_code ? ' (' + p.promo_code + ')' : '') : '') +
+    '</div><code>' + p.purchase_id + '</code>' +
+    '<div class="row">' +
+      '<div class="narrow"><label>Сумма возврата</label>' +
+      '<input class="r-amount" type="number" min="0.01" step="0.01" placeholder="всё"></div>' +
+      '<div class="btns" style="flex:0 0 auto;margin:0"><button class="credit small">Вернуть</button></div>' +
+    '</div>';
+
+  el.querySelector('button').onclick = () => {
+    const raw = el.querySelector('.r-amount').value.trim();
+    const path = '/api/v1/wallets/' + encodeURIComponent(walletId) +
+                 '/purchases/' + p.purchase_id + '/refund';
+    api('POST', path, raw ? { amount: Number(raw) } : undefined);
+  };
+
+  box.prepend(el);
+}
+</script>
+</body>
+</html>
