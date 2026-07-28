@@ -14,5 +14,5 @@
 - потолок баланса
 - Веб-страница
 
-**Быстрый старт:** "docker compose up --build -d" (http://localhost:8000/)
+**Быстрый старт:** "docker compose up --build -d" (localhost:8000/)
 **Тесты:** "docker compose run --rm --entrypoint pytest app -v"
